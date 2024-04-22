@@ -413,6 +413,10 @@ impl<'d, T: Instance> driver::Bus for Bus<'d, T> {
     }
 
     fn endpoint_set_stalled(&mut self, ep_addr: EndpointAddress, stalled: bool) {
+        // need to send a message to the host (via ctrl ep) regarding ep_addr (or unset if !stalled)
+        // set STALL in the buffer control register
+        // (https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf 4.1.2.6.2)
+
         let n = ep_addr.index();
 
         if n == 0 {
@@ -423,6 +427,11 @@ impl<'d, T: Instance> driver::Bus for Bus<'d, T> {
                     w.set_ep0_out(stalled);
                 }
             });
+
+            // ??? don't think we want this bit
+            // T::regs().sie_ctrl().modify(|w| {
+            //     w.set_ep0_int_stall(stalled);
+            // });
         }
 
         let ctrl = if ep_addr.is_in() {
